@@ -1,0 +1,24 @@
+package com.example.Expense_Tracker_Application.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDate;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "transactions")
+public class Transaction {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String description;
+
+    private String type;
+    private double amount;
+    private String category;
+    private LocalDate date;
+}

@@ -1,0 +1,154 @@
+const API = "http://localhost:8080/api/transactions";
+
+let allData = [];
+let currentFilter = "monthly";
+let barChart, pieChart;
+
+// LOAD DATA
+async function loadData() {
+    const res = await fetch(API);
+    allData = await res.json();
+    applyFilter();
+}
+
+// FILTER FUNCTION
+function setFilter(type) {
+    currentFilter = type;
+
+    document.querySelectorAll(".tabs button").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    event.target.classList.add("active");
+
+    document.getElementById("title").innerText = type.toUpperCase() + " View";
+
+    applyFilter();
+}
+
+// APPLY FILTER
+function applyFilter() {
+    const now = new Date();
+
+    const filtered = allData.filter(item => {
+        const d = new Date(item.date);
+
+        if (currentFilter === "daily") {
+            return d.toDateString() === now.toDateString();
+        }
+
+        if (currentFilter === "weekly") {
+            const weekAgo = new Date();
+            weekAgo.setDate(now.getDate() - 7);
+            return d >= weekAgo;
+        }
+
+        if (currentFilter === "monthly") {
+            return d.getMonth() === now.getMonth();
+        }
+
+        if (currentFilter === "yearly") {
+            return d.getFullYear() === now.getFullYear();
+        }
+
+        return true;
+    });
+
+    updateUI(filtered);
+}
+
+// UPDATE UI
+function updateUI(data) {
+    updateTable(data);
+    updateCharts(data);
+    updateBalance(data);
+}
+
+// TABLE
+function updateTable(data) {
+    const table = document.getElementById("tableBody");
+    table.innerHTML = "";
+
+    data.forEach(item => {
+        table.innerHTML += `
+            <tr>
+                <td>${item.date}</td>
+                <td>${item.category}</td>
+                <td>-${item.amount}</td>
+            </tr>`;
+    });
+}
+
+// BALANCE
+function updateBalance(data) {
+    let total = data.reduce((sum, i) => sum + i.amount, 0);
+    document.getElementById("balance").innerText = total;
+}
+
+// CHARTS
+function updateCharts(data) {
+    const categoryMap = {};
+
+    data.forEach(item => {
+        categoryMap[item.category] = (categoryMap[item.category] || 0) + item.amount;
+    });
+
+    const labels = Object.keys(categoryMap);
+    const values = Object.values(categoryMap);
+
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(document.getElementById("pieChart"), {
+        type: "pie",
+        data: {
+            labels: labels,
+            datasets: [{ data: values }]
+        }
+    });
+
+    if (barChart) barChart.destroy();
+    barChart = new Chart(document.getElementById("barChart"), {
+        type: "bar",
+        data: {
+            labels: data.map(d => d.date),
+            datasets: [{ data: data.map(d => d.amount) }]
+        }
+    });
+}
+
+// ADD EXPENSE
+async function addExpense() {
+    const amount = document.getElementById("amount").value;
+    const category = document.getElementById("category").value;
+    const date = document.getElementById("date").value;
+
+    if (!amount || !category || !date) {
+        alert("Fill all fields");
+        return;
+    }
+
+    await fetch(API, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            type: "expense",
+            amount: Number(amount),
+            category,
+            date
+        })
+    });
+
+    closeForm();
+    loadData();
+}
+
+// POPUP
+function openForm() {
+    document.getElementById("popup").style.display = "block";
+}
+
+function closeForm() {
+    document.getElementById("popup").style.display = "none";
+}
+
+// INIT
+loadData();

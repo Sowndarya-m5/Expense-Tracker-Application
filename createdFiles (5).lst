@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker | Charts & Time Filters</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fc 0%, #e9eef4 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            padding: 24px 28px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        h1 i {
+            color: #3b82f6;
+            font-size: 32px;
+        }
+
+        .subhead {
+            color: #475569;
+            margin-bottom: 28px;
+            padding-left: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        /* Input Form */
+        .form-card {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 28px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .input-field {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .input-field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .input-field input, .input-field select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-field input:focus, .input-field select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: none;
+            padding: 10px 28px;
+            border-radius: 40px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+
+        .btn-add:hover {
+            background: linear-gradient(135deg, #0f172a, #020617);
+            transform: scale(0.97);
+        }
+
+        /* Time Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+
+        .filter-btn {
+            background: #f1f5f9;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            color: #334155;
+            transition: 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 10px rgba(59,130,246,0.3);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-box {
+            flex: 1;
+            min-width: 280px;
+            background: white;
+            border-radius: 24px;
+            padding: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #eef2ff;
+        }
+
+        .chart-box h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        canvas {
+            max-height: 260px;
+            width: 100%;
+        }
+
+        /* Expense List */
+        .expense-section {
+            background: #fefefe;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .expense-header {
+            background: #f1f5f9;
+            padding: 16px 20px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .expense-list {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid #f0f2f5;
+            transition: 0.1s;
+        }
+
+        .expense-item:hover {
+            background: #fafcff;
+        }
+
+        .expense-info {
+            display: flex;
+            gap: 20px;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+
+        .expense-cat {
+            background: #eef2ff;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e40af;
+        }
+
+        .expense-date {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .expense-amount {
+            font-weight: 800;
+            font-size: 18px;
+            color: #0f172a;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 18px;
+            transition: 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+
+        .total-summary {
+            background: #f8fafc;
+            padding: 14px 20px;
+            text-align: right;
+            font-weight: 700;
+            font-size: 18px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .empty-msg {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 700px) {
+            .container { padding: 16px; }
+            .form-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-chart-pie"></i> ExpenseVision</h1>
+    <div class="subhead">Track • Analyze • Save — with year, month, week & day filters</div>
+
+    <!-- Add Expense Form -->
+    <div class="form-card">
+        <div class="form-row">
+            <div class="input-field">
+                <label><i class="fas fa-tag"></i> Description</label>
+                <input type="text" id="descInput" placeholder="e.g., Groceries, Coffee" autocomplete="off">
+            </div>
+            <div class="input-field">
+                <label><i class="fas fa-dollar-sign"></i> Amount</label>
+                <input type="number" id="amountInput" placeholder="0.00" step="0.01">
+            </div>
+            <div class="input-field">
+                <label><i class="fas fa-list"></i> Category</label>
+                <select id="catInput">
+                    <option>Food</option>
+                    <option>Transport</option>
+                    <option>Shopping</option>
+                    <option>Bills</option>
+                    <option>Entertainment</option>
+                    <option>Health</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="input-field">
+                <label><i class="fas fa-calendar"></i> Date</label>
+                <input type="date" id="dateInput">
+            </div>
+            <div class="input-field">
+                <button class="btn-add" id="addBtn"><i class="fas fa-plus-circle"></i> Add Expense</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Filter Tabs (Year, Month, Week, Day) -->
+    <div class="filter-tabs">
+        <button class="filter-btn" data-filter="all">📅 All Time</button>
+        <button class="filter-btn" data-filter="year">📆 Year</button>
+        <button class="filter-btn" data-filter="month">📆 Month</button>
+        <button class="filter-btn" data-filter="week">📅 Week</button>
+        <button class="filter-btn" data-filter="day">🌞 Today</button>
+    </div>
+
+    <!-- Charts: Bar + Pie -->
+    <div class="charts-grid">
+        <div class="chart-box">
+            <h3><i class="fas fa-chart-bar"></i> Expense Trend (by Category)</h3>
+            <canvas id="barChart" width="400" height="250" style="max-height: 250px;"></canvas>
+        </div>
+        <div class="chart-box">
+            <h3><i class="fas fa-chart-pie"></i> Category Distribution</h3>
+            <canvas id="pieChart" width="400" height="250" style="max-height: 250px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Expense List with dynamic filtering -->
+    <div class="expense-section">
+        <div class="expense-header">
+            <span><i class="fas fa-receipt"></i> Expense List</span>
+            <span><i class="fas fa-filter"></i> Filtered by: <span id="activeFilterLabel">All Time</span></span>
+        </div>
+        <div id="expenseListContainer" class="expense-list">
+            <div class="empty-msg">✨ No expenses yet. Add your first expense above!</div>
+        </div>
+        <div class="total-summary" id="totalDisplay">
+            Total: ₹0.00
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = "http://localhost:8080/api/transactions";
+
+    let expenses = [];
+
+    // ------------------ LOAD ------------------
+    async function loadData() {
+        try {
+            const res = await fetch(API);
+            expenses = await res.json();
+            renderAll();
+        } catch (err) {
+            console.error("Error loading data", err);
+        }
+    }
+
+    // ------------------ ADD ------------------
+    async function addExpense(desc, amount, category, date) {
+        if (!desc || !amount || !date) {
+            alert("Fill all fields");
+            return false;
+        }
+
+        const newExp = {
+            description: desc, // ✅ FIXED
+            amount: amount,
+            category: category,
+            type: "expense",
+            date: date
+        };
+
+        await fetch(API, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(newExp)
+        });
+
+        loadData();
+        return true;
+    }
+
+    // ------------------ DELETE ------------------
+    async function deleteExpense(id) {
+        await fetch(`${API}/${id}`, {
+            method: "DELETE"
+        });
+        loadData();
+    }
+
+    // ------------------ FILTER ------------------
+    let currentFilter = "all";
+
+    function getFilteredExpenses() {
+        const today = new Date();
+
+        return expenses.filter(exp => {
+            const d = new Date(exp.date);
+
+            if (currentFilter === "year") {
+                return d.getFullYear() === today.getFullYear();
+            }
+
+            if (currentFilter === "month") {
+                return d.getMonth() === today.getMonth();
+            }
+
+            if (currentFilter === "week") {
+                const weekAgo = new Date();
+                weekAgo.setDate(today.getDate() - 7);
+                return d >= weekAgo;
+            }
+
+            if (currentFilter === "day") {
+                return d.toDateString() === today.toDateString();
+            }
+
+            return true;
+        });
+    }
+
+    // ------------------ CHARTS ------------------
+    let barChart, pieChart;
+
+    function updateCharts() {
+        const filtered = getFilteredExpenses();
+
+        const map = {};
+        filtered.forEach(e => {
+            map[e.category] = (map[e.category] || 0) + e.amount;
+        });
+
+        const labels = Object.keys(map);
+        const values = Object.values(map);
+
+        if (barChart) barChart.destroy();
+        barChart = new Chart(document.getElementById("barChart"), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: "#3b82f6"
+                }]
+            }
+        });
+
+        if (pieChart) pieChart.destroy();
+        pieChart = new Chart(document.getElementById("pieChart"), {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values
+                }]
+            }
+        });
+    }
+
+    // ------------------ FORMAT DATE ------------------
+    function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString("en-GB");
+    }
+
+    // ------------------ LIST (FIXED) ------------------
+    function renderExpenseList() {
+        const container = document.getElementById("expenseListContainer");
+        const filtered = getFilteredExpenses();
+
+        let total = 0;
+
+        if (filtered.length === 0) {
+            container.innerHTML = "No expenses";
+            return;
+        }
+
+        container.innerHTML = filtered.map(exp => {
+            total += exp.amount;
+
+            return `
+        <div class="expense-item">
+            <div>
+                ${exp.category} - ${exp.description || "No Note"} - ${formatDate(exp.date)}
+            </div>
+            <div>
+                ₹${exp.amount}
+                <button onclick="editExpense(${exp.id})">Edit</button>
+                <button onclick="deleteExpense(${exp.id})">Delete</button>
+            </div>
+        </div>`;
+        }).join("");
+
+        document.getElementById("totalDisplay").innerText = "Total: ₹" + total;
+    }
+
+    // ------------------ EDIT (FIXED) ------------------
+    async function editExpense(id) {
+        const exp = expenses.find(e => e.id === id);
+
+        const newDesc = prompt("Enter note", exp.description || "");
+        const newAmount = prompt("Enter amount", exp.amount);
+        const newCategory = prompt("Enter category", exp.category);
+
+        if (!newAmount || !newCategory) return;
+
+        await fetch(`${API}/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                description: newDesc, // ✅ FIXED
+                amount: Number(newAmount),
+                category: newCategory,
+                type: "expense",
+                date: exp.date
+            })
+        });
+
+        loadData();
+    }
+
+    // ------------------ FILTER BUTTON ------------------
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            currentFilter = btn.getAttribute("data-filter");
+            renderAll();
+        });
+    });
+
+    // ------------------ ADD BUTTON ------------------
+    document.getElementById("addBtn").addEventListener("click", () => {
+        const desc = document.getElementById("descInput").value;
+        const amount = parseFloat(document.getElementById("amountInput").value);
+        const category = document.getElementById("catInput").value;
+        const date = document.getElementById("dateInput").value;
+
+        addExpense(desc, amount, category, date);
+    });
+
+    // ------------------ RENDER ------------------
+    function renderAll() {
+        renderExpenseList();
+        updateCharts();
+    }
+
+    // ------------------ INIT ------------------
+    loadData();
+</script>
+
+
+</body>
+</html>
+
+
+
+
